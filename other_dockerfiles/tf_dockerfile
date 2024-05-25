@@ -1,0 +1,23 @@
+FROM tensorflow/tensorflow:latest-gpu
+
+WORKDIR /app
+
+COPY . /app
+
+RUN apt-get update && apt-get install -y dc bc
+
+RUN wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/fslinstaller.py -O fsl_ubuntu/fslinstaller.py
+
+RUN python fsl_ubuntu/fslinstaller.py -d /usr/local/fsl
+
+ENV FSLDIR=/usr/local/fsl
+
+ENV PATH=$FSLDIR/bin:$PATH
+
+RUN /bin/bash -c 'source /usr/local/fsl/etc/fslconf/fsl.sh'
+
+ENV FSLOUTPUTTYPE=NIFTI_GZ
+
+RUN pip install -r requirements.txt
+
+CMD [ "./run.sh" ]

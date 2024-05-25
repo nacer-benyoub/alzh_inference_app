@@ -1,0 +1,7 @@
+tensorflow
+pandas
+numpy
+SimpleITK
+tifffile
+pillow
+jupyter
