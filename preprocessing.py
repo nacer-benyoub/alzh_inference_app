@@ -183,6 +183,6 @@ if __name__ == "__main__":
     
     config = get_config_dict()
     
-    data_path = str(config["raw_data_path"])
+    data_path = config["raw_data_path"]
     
     main()
