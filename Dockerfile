@@ -19,13 +19,15 @@ ENV FSLOUTPUTTYPE="NIFTI_GZ"
 # set the working directory in the container
 WORKDIR /app
 
-# Specify any command to run when the container starts
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-COPY . .
-
+# Copy requirements.txt separately and install dependencies so it can be cached
+COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
+# Copy the files
+COPY . .
+
+# Make entrypoint.sh executable
+RUN chmod +x entrypoint.sh
+
 # run the entrypoint script
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["./entrypoint.sh"]

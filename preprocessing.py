@@ -82,9 +82,14 @@ def cropping(image: np.array, axial_size: int = 180, central_crop_along_z: bool 
 
 def save_np(image_np, preprocessed_image_path):
     preprocessed_image_path = str(preprocessed_image_path).replace(".nii.gz", "")
+    
+    # Transform the image into 3-channel format if it's in 1-channel format
+    if len(image_np.shape) == 3:
+        image_np = np.expand_dims(image_np, axis=-1)
+        image_np = np.repeat(image_np, 3, axis=-1)
 
     data_dict = {"image": image_np}
-    np.savez_compressed(preprocessed_image_path, data_dict) # saving into .npz
+    np.savez_compressed(preprocessed_image_path, **data_dict) # saving into .npz
 
 def save_2d(image_np, preprocessed_image_path):
     # preprocessed_image_path = str(preprocessed_image_path)[:str(preprocessed_image_path).rfind(".")]
