@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Running Step 1: Preprocessing..."
-python preprocessing.py > preprocessing.txt
+python preprocessing.py
 echo "Step 1 completed successfully"
 echo
 

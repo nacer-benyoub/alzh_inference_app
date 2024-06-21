@@ -1,8 +1,8 @@
 __pycache__
 .adni
-other_dockerfiles
-fsl_ubuntu
-in_container
 data
-saved_models/*
-!saved_models/*.keras
+experimenting
+fsl_ubuntu
+other_dockerfiles
+saved_models
+*.md

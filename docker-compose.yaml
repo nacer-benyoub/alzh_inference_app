@@ -1,0 +1,21 @@
+services:
+  serving:
+    image: tensorflow/serving
+    environment:
+      - MODEL_NAME=$MODEL_NAME
+    volumes:
+      - "./saved_models/${MODEL_NAME}:/models/${MODEL_NAME}"
+    expose:
+      - 8501
+
+  processing:
+    build: .
+    image: alzh-processing:0.1.0
+    depends_on:
+      - serving
+    volumes:
+      - "./data:/app/data"
+    environment:
+      - MODEL_NAME=$MODEL_NAME
+      - MODEL_VERSION=$MODEL_VERSION
+    entrypoint: /app/run.sh
