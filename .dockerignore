@@ -7,3 +7,4 @@ other_dockerfiles
 saved_models
 *.md
 webapp
+inference.ipynb

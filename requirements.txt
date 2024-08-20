@@ -3,5 +3,4 @@ SimpleITK
 tifffile
 pillow
 pandas
-jupyter
 flask

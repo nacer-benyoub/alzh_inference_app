@@ -12,7 +12,6 @@ raw_data/<subject_id>/<preprocessing>/<date>/<acquisition_id>/<file_name>.nii
 ```
 Change the scripts to work without the need for the directory structure above.
 - Use logging instead of print statements (processing.py and inference.ipynb).
-- Rewrite jupyter notebooks as python scripts to get rid of the jupyter dependency.
 
 ## Commands
 ### Inspecting the SavedModel

@@ -14,7 +14,7 @@ CONFIG = get_config_dict()
 def generate_subject_id(existing_ids):
     while True:
         uid = uuid.uuid4()
-        subject_id = f"{uid.int[:3]}_S_{uid[3:7]}"
+        subject_id = f"{str(uid.int)[:3]}_S_{str(uid.int)[3:7]}"
         if subject_id not in existing_ids:
             return subject_id
 
@@ -22,7 +22,7 @@ def generate_subject_id(existing_ids):
 def generate_image_id(existing_ids):
     while True:
         uid = uuid.uuid4()
-        image_id = f"I{uid.int[:7]}"
+        image_id = f"I{str(uid.int)[:7]}"
         if image_id not in existing_ids:
             return image_id
 
@@ -63,11 +63,8 @@ def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, im
 def process_file():
     # Extract the file and data
     received_file = request.files["file"]
-    subject_id = request.form['subject_id']
-    image_id = request.form['image_id']
-    app.logger.debug(f"received file type {type(received_file)}")
-    app.logger.debug(f"received file name {received_file.name}")
-    app.logger.debug(f"received file filename {received_file.filename}")
+    subject_id = request.form['subject_id'] if "subject_id" in request.form else None
+    image_id = request.form['image_id'] if "image_id" in request.form else None
     if received_file:
         # Save the file to the raw_data directory
         image_id_path = ensure_raw_data_dir_structure(subject_id, image_id)

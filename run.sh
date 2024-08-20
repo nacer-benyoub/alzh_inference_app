@@ -6,6 +6,7 @@ echo "Step 1 completed successfully"
 echo
 
 echo "Running Step 2: Inference..."
-jupyter nbconvert --to notebook --execute inference.ipynb --inplace
+# jupyter nbconvert --to notebook --execute inference.ipynb --inplace
+python inference.py
 echo "Step 2 completed successfully"
 echo
