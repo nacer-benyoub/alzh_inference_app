@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="../static/css/styles.css">
+    <title>Alzheimer's Disease</title>
+</head>
+<body>
+
+    <header>
+        <a href="#" >
+            <img class="logo" src="../static/img/logo.png">
+        </a>
+        <nav class="navigation">
+            <a href="#services">Services</a>
+            <a href="#projects">Projects</a>
+            <a href="#contact">Contact</a>
+            <a href="#login">Login</a>
+        </nav>
+    </header>
+
+    <section class="main">
+        <div class="text">
+            <h2><span>Welcome to Alzheimer’s Disease Detection</span></h2>
+            <h2>This interactive tool allows clinicians to upload neuroimaging data and receive predictions about Alzheimer's Disease, Mild Cognitive Impairment (MCI), and Cognitively Normal (CN) statuses.</h2>
+            <div class="button-container">
+                <button class="main-btn" onclick="window.location.href='{{ url_for('upload') }}'">Start predicting</button>
+            </div>
+        </div>
+        <div class="imag">
+            <img src="../static/img/imag.png">
+        </div>
+    </section>
+
+</body>
+</html>

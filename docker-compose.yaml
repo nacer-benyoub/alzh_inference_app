@@ -2,7 +2,7 @@ services:
   serving:
     image: tensorflow/serving
     environment:
-      - MODEL_NAME=$MODEL_NAME
+      - MODEL_NAME=${MODEL_NAME}
     volumes:
       - "./saved_models/${MODEL_NAME}:/models/${MODEL_NAME}"
     expose:
@@ -10,12 +10,27 @@ services:
 
   processing:
     build: .
-    image: alzh-processing:0.1.0
-    depends_on:
-      - serving
+    image: alzh-processing
     volumes:
       - "./data:/app/data"
     environment:
-      - MODEL_NAME=$MODEL_NAME
-      - MODEL_VERSION=$MODEL_VERSION
-    entrypoint: /app/run.sh
+      - MODEL_NAME=${MODEL_NAME}
+      - MODEL_VERSION=${MODEL_VERSION}
+    entrypoint: ["python", "/app/process_service.py"]
+    depends_on:
+      - serving
+    expose:
+      - 5000
+
+  webapp:
+    build: ./webapp
+    image: alzh-webapp
+    depends_on:
+      - processing
+    ports:
+      - "8080:8080"
+    # volumes:
+    #   - "./webapp:/app"
+    environment:
+      - PROCESSING_SERVICE_URL=http://processing:5000
+    entrypoint: ["python", "/app/app.py"]

@@ -8,14 +8,14 @@ from typing import List
 from get_config import get_config_dict
 from PIL import Image
 
-def get_unique_image_file(subject_protocol_folder: List[Path]) -> np.array:
+def get_unique_image_file(subject_image_files: List[Path]) -> np.array:
     # the inversion [::-1] is done so the most preprocessed data is used
-    found_image_ids = np.array([image_file.parents[0].name for image_file in subject_protocol_folder])
+    found_image_ids = np.array([image_file.parents[0].name for image_file in subject_image_files])
     inverse_found_image_ids = found_image_ids[::-1]
     ids, idx = np.unique(inverse_found_image_ids, return_index=True)
-    unique_image_ids_paths = np.array(subject_protocol_folder)[::-1][idx]
+    unique_image_ids_paths = np.array(subject_image_files)[::-1][idx]
 
-    assert len(unique_image_ids_paths) <= len(subject_protocol_folder)
+    assert len(unique_image_ids_paths) <= len(subject_image_files)
     assert len(unique_image_ids_paths) > 0
 
     return unique_image_ids_paths

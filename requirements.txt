@@ -4,3 +4,4 @@ tifffile
 pillow
 pandas
 jupyter
+flask

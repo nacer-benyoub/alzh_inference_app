@@ -5,11 +5,14 @@ in which the same preprocessing logic used on the training data *(sampled from [
 ### Inference
 By using the Tensorflow Serving docker image to serve the model and output predictions from the preprocessed data
 
-## Notes
+## Notes/TODO
 - Both [preprocessing.py](preprocessing.py) and [inference.ipynb](inference.ipynb) still expect the `raw_data` directory to have the ADNI data directory structure:
 ```
 raw_data/<subject_id>/<preprocessing>/<date>/<acquisition_id>/<file_name>.nii
 ```
+Change the scripts to work without the need for the directory structure above.
+- Use logging instead of print statements (processing.py and inference.ipynb).
+- Rewrite jupyter notebooks as python scripts to get rid of the jupyter dependency.
 
 ## Commands
 ### Inspecting the SavedModel
