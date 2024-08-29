@@ -133,7 +133,10 @@ def main():
             )
             preprocessed_image_path.parent.mkdir(parents=True, exist_ok=True)
 
-            existing_processed_files_count = len(list(preprocessed_image_path.parent.glob("**/*.tiff")))
+            if config['save_2d']:
+                existing_processed_files_count = len(list(preprocessed_image_path.parent.glob("**/*.tiff")))
+            else:
+                existing_processed_files_count = len(list(preprocessed_image_path.parent.glob("**/*.npz")))
             if existing_processed_files_count > 0 and not config["re_process"]:
                 total_processed_images_count += 1
                 print("Preprocessed images already exist. Skipping...")

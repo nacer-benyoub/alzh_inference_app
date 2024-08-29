@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 from pathlib import Path
+import shutil
 import uuid
 from get_config import get_config_dict
 from flask import Flask, request, jsonify
@@ -22,7 +23,7 @@ def generate_subject_id(existing_ids):
 def generate_image_id(existing_ids):
     while True:
         uid = uuid.uuid4()
-        image_id = f"I{str(uid.int)[:7]}"
+        image_id = f"I{str(uid.int)[:5]}"
         if image_id not in existing_ids:
             return image_id
 
@@ -41,7 +42,8 @@ def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, im
 
     # Generate image_date_time if not provided
     if image_date_time is None:
-        image_date_time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+        # image_date_time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+        image_date_time = datetime.now().strftime("%Y-%m-%d")
 
     # Create image_date_time directory
     image_date_time_path = os.path.join(raw_data_dir, subject_id, image_type, image_date_time)
@@ -84,6 +86,11 @@ def process_file():
             app.logger.debug(f"filename {filename}")
             json_data[filename.stem] = json.load(open(filename))
         result["data"] = json_data
+        
+        # Clean the data directory:
+        if CONFIG['clean_data_dir']:
+            for directory in [CONFIG['raw_data_path'], CONFIG["preprocessed_data_path"]]:
+                shutil.rmtree(directory)
 
         # Return the post-processed results
         return jsonify(result)

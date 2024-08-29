@@ -21,6 +21,7 @@ services:
       - serving
     expose:
       - 5000
+    user: 1000:1000
 
   webapp:
     build: ./webapp
@@ -34,3 +35,4 @@ services:
     environment:
       - PROCESSING_SERVICE_URL=http://processing:5000
     entrypoint: ["python", "/app/app.py"]
+    user: 1000:1000

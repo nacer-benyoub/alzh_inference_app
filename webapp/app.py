@@ -22,9 +22,6 @@ def upload():
     if request.method == "POST":
         # Get the file and data from the user 
         uploaded_file = request.files["file"]
-        app.logger.debug(f"uploaded file type {type(uploaded_file)}")
-        app.logger.debug(f"uploaded file name {uploaded_file.name}")
-        app.logger.debug(f"uploaded file filename {uploaded_file.filename}")
         subject_id = request.form['subject_id']
         if not subject_id:
             subject_id = None
@@ -34,14 +31,14 @@ def upload():
         
         # Post processing request and get results
         payload = {"subject_id": subject_id, "image_id": image_id}
+        app.logger.debug(f"file filename {uploaded_file.filename}")
+        app.logger.debug(f"file type {type(uploaded_file)}")
         file_payload = {"file": (uploaded_file.filename, uploaded_file)}
         response = requests.post(PROCESSING_SERVICE_URL + "predict", files=file_payload, data=payload)
-        app.logger.debug(f"request headers: {response.request.headers}")
-        app.logger.debug(f"response reason: {response.reason}")
-        app.logger.debug(f"response text: {response.text}")
         json = response.json()
         if json['status'] == 'success':
             data = json['data']
+            # TODO send the data to the results endpoint instead (for further processing)
             return render_template("results.html", data=data)
         # else: TODO
         #     report error the flask way

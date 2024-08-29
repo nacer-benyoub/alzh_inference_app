@@ -8,6 +8,7 @@ def get_config_dict():
     config["preprocessed_data_path"] = Path(r'data/preprocessed_data')
     config['pred_path'] = Path(r'data/predictions')
     config["re_process"] = False
+    config['clean_data_dir'] = True
     
     resolution_mm = 1
     config["reference_atlas_location"] = Path(f'{os.environ["FSLDIR"]}/data/standard/MNI152_T1_{resolution_mm}mm_brain.nii.gz')

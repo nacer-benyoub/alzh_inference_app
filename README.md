@@ -11,7 +11,11 @@ By using the Tensorflow Serving docker image to serve the model and output predi
 raw_data/<subject_id>/<preprocessing>/<date>/<acquisition_id>/<file_name>.nii
 ```
 Change the scripts to work without the need for the directory structure above.
-- Use logging instead of print statements (processing.py and inference.ipynb).
+- Add support for DICOM files.
+- Use logging instead of print statements (processing.py and inference.py).
+- Time the inference script and the total processing (preprocessing + inference) job
+- Show a progress bar during the processing job to improve the user experience.
+- Change how pred values colors contrast with background color (research if css has conditional blocks to use instead of computing 1 - var(--alpha))
 
 ## Commands
 ### Inspecting the SavedModel

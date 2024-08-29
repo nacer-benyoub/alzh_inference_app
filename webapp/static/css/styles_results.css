@@ -1,0 +1,89 @@
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 20px;
+    padding: 0;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.subject-predictions, .slice-predictions {
+    width: 80%;
+    max-width: 1200px;
+}
+
+.subject-predictions th {
+    font-size: larger;
+    text-align: left;
+    font-weight: 700;
+}
+
+.subject-predictions td {
+    font-weight: 500;
+    font-size: large;
+    text-align: left;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th, td {
+    border: 4px solid #fff;
+    padding: 8px;
+    text-align: center;
+}
+
+th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+
+.heatmap-container {
+    overflow-x: auto;
+    white-space: nowrap;
+    margin-top: 20px;
+}
+
+.heatmap-table td {
+    width: 20px;
+    height: 100px;
+    font-weight: bold;
+    font-size: small;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+/* Color classes with better contrast */
+.prediction-ad {
+    background-color: hsl(215, 85%, calc(var(--alpha)*(23% - 96%) + 96%)); /* range shift from 0-1 (pred) to 96 - 23 (L) */
+    color: hsl(215, 85%, calc(var(--alpha) * (96% - 23%) + 23%)); /* Text color contrasted with background */
+}
+
+.prediction-cn {
+    background-color: hsl(215, 85%, calc(var(--alpha)*(23% - 96%) + 96%)); /* range shift from 0-1 (pred) to 96 - 23 (L) */
+    color: hsl(215, 85%, calc(var(--alpha) * (96% - 23%) + 23%)); /* Text color contrasted with background */
+}
+
+.prediction-mci {
+    background-color: hsl(215, 85%, calc(var(--alpha)*(23% - 96%) + 96%)); /* range shift from 0-1 (pred) to 96 - 23 (L) */
+    color: hsl(215, 85%, calc(var(--alpha) * (96% - 23%) + 23%)); /* Text color contrasted with background */
+}
+
+.label {
+    font-size: 0.9em;
+    font-weight: bold;
+    text-align: left;
+    margin-bottom: 5px;
+}
