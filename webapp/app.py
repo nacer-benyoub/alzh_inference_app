@@ -21,7 +21,7 @@ def process():
 def upload():
     if request.method == "POST":
         # Get the file and data from the user 
-        uploaded_file = request.files["file"]
+        uploaded_files = request.files.getlist("file")
         subject_id = request.form['subject_id']
         if not subject_id:
             subject_id = None
@@ -31,9 +31,11 @@ def upload():
         
         # Post processing request and get results
         payload = {"subject_id": subject_id, "image_id": image_id}
-        app.logger.debug(f"file filename {uploaded_file.filename}")
-        app.logger.debug(f"file type {type(uploaded_file)}")
-        file_payload = {"file": (uploaded_file.filename, uploaded_file)}
+        app.logger.debug(f"files count: {len(uploaded_files)}")
+        app.logger.debug(f"files types: {[type(file_) for file_ in uploaded_files]}")
+        file_payload = []
+        for file_ in uploaded_files:
+            file_payload.append(("files", (file_.filename, file_.read(), file_.content_type)))
         response = requests.post(PROCESSING_SERVICE_URL + "predict", files=file_payload, data=payload)
         json = response.json()
         if json['status'] == 'success':

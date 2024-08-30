@@ -195,7 +195,6 @@ df.set_index("slice_name", append=True).groupby("subject_id").apply(
     .to_dict()
 ).to_json(slice_pred_path, orient="index", indent=4)
 
-
 # Save scan-level predictions to `scan_predictions.json`
 scan_pred_path = pred_path.joinpath("scan_predictions.json")
 

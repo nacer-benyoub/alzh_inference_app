@@ -1,6 +1,7 @@
 services:
   serving:
     image: tensorflow/serving
+    container_name: serving
     environment:
       - MODEL_NAME=${MODEL_NAME}
     volumes:
@@ -11,6 +12,7 @@ services:
   processing:
     build: .
     image: alzh-processing
+    container_name: processing
     volumes:
       - "./data:/app/data"
     environment:
@@ -21,18 +23,15 @@ services:
       - serving
     expose:
       - 5000
-    user: 1000:1000
 
   webapp:
     build: ./webapp
     image: alzh-webapp
+    container_name: webapp
     depends_on:
       - processing
     ports:
       - "8080:8080"
-    # volumes:
-    #   - "./webapp:/app"
     environment:
       - PROCESSING_SERVICE_URL=http://processing:5000
     entrypoint: ["python", "/app/app.py"]
-    user: 1000:1000

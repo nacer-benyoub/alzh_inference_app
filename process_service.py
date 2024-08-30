@@ -64,14 +64,19 @@ def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, im
 @app.route("/predict", methods=["POST"])
 def process_file():
     # Extract the file and data
-    received_file = request.files["file"]
+    received_files = request.files.getlist("files")
     subject_id = request.form['subject_id'] if "subject_id" in request.form else None
     image_id = request.form['image_id'] if "image_id" in request.form else None
-    if received_file:
+    if received_files:
         # Save the file to the raw_data directory
         image_id_path = ensure_raw_data_dir_structure(subject_id, image_id)
-        file_path = os.path.join(image_id_path, received_file.filename)
-        received_file.save(file_path)
+        for file_ in received_files:
+            file_path = os.path.join(image_id_path, file_.filename)
+            file_.save(file_path)
+            
+        # Convert DICOM files to NIfTI if any are present
+        if any([file_.filename.endswith(".dcm") for file_ in received_files]):
+            os.system(f"dcm2niix {image_id_path}")
 
         # Perform processing
         os.system("./run.sh")
@@ -83,7 +88,6 @@ def process_file():
         json_filenames = Path(CONFIG["pred_path"]).glob("*.json")
         json_data = {}
         for filename in json_filenames:
-            app.logger.debug(f"filename {filename}")
             json_data[filename.stem] = json.load(open(filename))
         result["data"] = json_data
         
