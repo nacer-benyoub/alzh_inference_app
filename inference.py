@@ -1,5 +1,5 @@
-import os
-
+from doctest import REPORT_CDIFF
+from pprint import pprint
 from get_config import get_config_dict
 
 from pathlib import Path
@@ -12,14 +12,9 @@ import pandas as pd
 import json
 import requests
 
-CONFIG = get_config_dict()
-
-# ### Load the data
+## Data loading functions
 # `load_*_data` functions expect ADNI-like directory structure
-
-
-# Load images
-def load_2d_data(data_dir: Path):
+def load_2d_data(data_dir: Path, ids_only=False):
     X = []
     ids = {}
     for subject_idx, subject_path in enumerate(data_dir.glob("*")):
@@ -27,20 +22,22 @@ def load_2d_data(data_dir: Path):
         subject_scans = []
         subject_id = subject_path.stem
 
-        for scan_idx, scan_path in enumerate(subject_path.glob("**/I*")):
+        for scan_idx, scan_path in enumerate(subject_path.glob("**/*")):
             scan_imgs = []
             scan_id = scan_path.stem
             scan_ids[scan_id] = []
             for img_idx, img_path in enumerate(scan_path.glob("**/*.tiff")):
                 img_name = img_path.stem
 
-                img = tiff.imread(img_path)
-                if img.shape[-1] not in (1, 3):
-                    img = np.expand_dims(img, axis=-1)
-                if img.shape[-1] == 1:
-                    img = np.repeat(img, 3, axis=-1)
+                if not ids_only:
+                    img = tiff.imread(img_path)
+                    if img.shape[-1] not in (1, 3):
+                        img = np.expand_dims(img, axis=-1)
+                    if img.shape[-1] == 1:
+                        img = np.repeat(img, 3, axis=-1)
 
-                scan_imgs.append(img)
+                    scan_imgs.append(img)
+                
                 scan_ids[scan_id].append(img_name)
 
             subject_scans.append(scan_imgs)
@@ -48,10 +45,11 @@ def load_2d_data(data_dir: Path):
         ids[subject_id] = scan_ids
         subject_scans = np.array(subject_scans)
         X.append(subject_scans)
+    print("X shape", np.array(X).shape)
     return X, ids
 
 
-def load_3d_data(data_dir: Path, npz_key="image"):
+def load_3d_data(data_dir: Path, npz_key="image", ids_only=False):
     X = []
     ids = {}
     for subject_idx, subject_path in enumerate(data_dir.glob("*")):
@@ -61,76 +59,65 @@ def load_3d_data(data_dir: Path, npz_key="image"):
 
         scan_paths = subject_path.glob("**/*.npz")
         for scan_idx, scan_path in enumerate(scan_paths):
-            scan_imgs = []
             scan_id = scan_path.parent.stem
             scan_name = scan_path.stem
 
-            img = np.load(scan_path)[npz_key]
+            if not ids_only:
+                img = np.load(scan_path)[npz_key]
 
-            scan_imgs.append(img)
             scan_ids[scan_id] = scan_name
 
-            subject_scans.append(scan_imgs)
+            if not ids_only:
+                subject_scans.append(img)
 
         ids[subject_id] = scan_ids
-        subject_scans = np.array(subject_scans)
-        X.append(subject_scans)
-    # X = tf.squeeze(X)
+        if not ids_only:
+            subject_scans = np.array(subject_scans)
+            X.append(subject_scans)
+            # X = tf.squeeze(X)
+            # X = [np.squeeze(imgs, axis=1) for imgs in X]
+    print("X shape", np.array(X).shape)
     return X, ids
 
+## Prediction functions
+def predict_scan(serving_url, scan_imgs):
+    data = json.dumps(
+        {
+            "signature_name": "serving_default",  # TODO Might parametrize this (include in get_config)
+            "inputs": scan_imgs.tolist(),
+        }
+    )
+    headers = {"content-type": "application/json"}
+    
+    # Make prediction request
+    json_response = requests.post(serving_url, data=data, headers=headers)
+    response_dict = json.loads(json_response.text)["outputs"]
+    scan_preds = response_dict["predictions"]
+    labels = response_dict["labels"]
+    return scan_preds, labels
 
-preprocessed_data_path = CONFIG["preprocessed_data_path"]
 
-# Define the directory containing the extracted dataset
-data_dir = Path(preprocessed_data_path)
-if CONFIG["save_2d"]:
-    X, ids = load_2d_data(data_dir)
-else:
-    X, ids = load_3d_data(data_dir)
-    X = [np.squeeze(imgs, axis=1) for imgs in X]
+def predict_subjects(X, serving_url):
+    y_pred = []
+    for subject_imgs in X:
+        subject_preds = []
 
-for (idx, subject_imgs), subject_id in zip(enumerate(X), ids.keys()):
-    # print(subject_imgs.shape)
-    print(f"Shape of {subject_id} images:", subject_imgs.shape)
+        for scan_imgs in subject_imgs:
+            scan_preds, labels = predict_scan(serving_url, scan_imgs)
+            # Reverse one-hot predictions
+            # scan_preds = scan_preds.argmax(axis=-1)
 
+            subject_preds.append(scan_preds)
 
-# ### Inference
-serving_url = CONFIG["serving_url"]
-
-# Inference loop
-y_pred = []
-for subject_imgs in X:
-    subject_preds = []
-
-    for scan_imgs in subject_imgs:
-        # Make prediction request
-        data = json.dumps(
-            {
-                "signature_name": "serving_default",  # TODO Might parametrize this (include in get_config)
-                "inputs": scan_imgs.tolist(),
-            }
-        )
-        headers = {"content-type": "application/json"}
-        json_response = requests.post(serving_url, data=data, headers=headers)
-        response_dict = json.loads(json_response.text)["outputs"]
-        scan_preds = response_dict["predictions"]
-        # Reverse one-hot predictions
-        # scan_preds = scan_preds.argmax(axis=-1)
-
-        subject_preds.append(scan_preds)
-
-    y_pred.append(np.array(subject_preds))
-
-for subject_preds, subject_id in zip(y_pred, ids.keys()):
-    print(f"Shape of {subject_id} preds:", subject_preds.shape)
-
+        y_pred.append(np.array(subject_preds))
+    return y_pred, labels
 
 # import yaml
 # with open('CLASSES.yaml') as f:
 #     label_mapper = yaml.safe_load(f.read())
 
-
-def build_df(y_pred, ids, is_2d):
+## df building
+def build_df(y_pred, ids, labels, is_2d):
     df = []
     for subject_id, subject_preds in zip(ids.keys(), y_pred):
         for scan_id, scan_preds in zip(ids[subject_id].keys(), subject_preds):
@@ -144,7 +131,7 @@ def build_df(y_pred, ids, is_2d):
                     d.update(
                         {
                             label: pred
-                            for label, pred in zip(response_dict["labels"], slice_pred)
+                            for label, pred in zip(labels, slice_pred)
                         }
                     )
                     df.append(d)
@@ -158,7 +145,7 @@ def build_df(y_pred, ids, is_2d):
                     d.update(
                         {
                             label: pred
-                            for label, pred in zip(response_dict["labels"], slice_pred)
+                            for label, pred in zip(labels, slice_pred)
                         }
                     )
                     df.append(d)
@@ -166,49 +153,115 @@ def build_df(y_pred, ids, is_2d):
     df = pd.DataFrame(df).set_index(["subject_id", "scan_id"])
     return df
 
-
-if CONFIG["save_2d"]:
-    df = build_df(y_pred, ids, is_2d=True)
-else:
-    df = build_df(y_pred, ids, is_2d=False)
-
-# ### Saving the predictions
-
-pred_path = CONFIG["pred_path"]
-if not pred_path.exists():
-    pred_path.mkdir(parents=True, exist_ok=True)
-
-
-# Save slice-level predictions to `slice_predictions.json`
-slice_pred_path = pred_path.joinpath("slice_predictions.json")
-
-df.set_index("slice_name", append=True).groupby("subject_id").apply(
-    lambda x: x.droplevel(  # drop subject_id index level
-        "subject_id"
-    )  # group by scan_id index level
-    .groupby("scan_id")
-    .apply(
-        lambda y: y.droplevel("scan_id").to_dict(  # drop scan_id index level
-            orient="index"
+## Saving functions
+def save_slice_pred(df, slice_pred_path):
+    slice_preds = df.set_index("slice_name", append=True).groupby("subject_id").apply(
+        lambda x: x.droplevel(  # drop subject_id index level
+            "subject_id"
+        )  # group by scan_id index level
+        .groupby("scan_id")
+        .apply(
+            lambda y: y.droplevel("scan_id").to_dict(  # drop scan_id index level
+                orient="index"
+            )
         )
+        .to_dict()
     )
-    .to_dict()
-).to_json(slice_pred_path, orient="index", indent=4)
-
-# Save scan-level predictions to `scan_predictions.json`
-scan_pred_path = pred_path.joinpath("scan_predictions.json")
-
-scan_level_preds = (
-    df[["MCI", "AD", "CN"]].groupby(["subject_id", "scan_id"]).aggregate("mean")
-)
-scan_level_preds.groupby(level=0).apply(
-    lambda x: x.droplevel(0).to_dict(orient="index")
-).to_json(scan_pred_path, orient="index", indent=4)
+    slice_preds.to_json(slice_pred_path, orient="index", indent=4)
+    
+    return slice_preds
 
 
-# Save subject-level predicitons to `subject_predictions.json`
-subject_pred_path = pred_path.joinpath("subject_predictions.json")
+def save_scan_pred(df, scan_pred_path):
+    scan_level_preds = (
+        df[["MCI", "AD", "CN"]].groupby(["subject_id", "scan_id"]).aggregate("mean")
+    )
+    scan_preds_grouped = scan_level_preds.groupby(level=0).apply(
+        lambda x: x.droplevel(0).to_dict(orient="index")
+    )
+    
+    scan_preds_grouped.to_json(scan_pred_path, orient="index", indent=4)
+    return scan_level_preds, scan_preds_grouped
 
-scan_level_preds.groupby("subject_id").mean().to_json(
-    subject_pred_path, orient="index", indent=4
-)
+
+def save_subject_pred(scan_level_preds, subject_pred_path):
+    subject_preds = scan_level_preds.groupby("subject_id").mean()
+    subject_preds.to_json(
+        subject_pred_path, orient="index", indent=4
+    )
+    return subject_preds
+
+### Inference
+def get_inference_results(config, input_data=None):
+    preprocessed_data_path = config["preprocessed_data_path"]
+
+    # Define the directory containing the extracted dataset
+    data_dir = Path(preprocessed_data_path)
+    
+    # Load the data
+    ids_only = input_data is not None
+    if config["save_2d"]:
+        X, ids = load_2d_data(data_dir=data_dir, ids_only=ids_only)
+    else:
+        X, ids = load_3d_data(data_dir=data_dir, ids_only=ids_only)
+        
+    X = input_data if input_data is not None else X
+
+    # Print subject ids and scan shapes
+    for subject_id, subject_imgs in zip(ids.keys(), X):
+        print(f"Shape of {subject_id} images:", subject_imgs.shape)
+
+    serving_url = config["serving_url"]
+
+    # Inference loop
+    y_pred, labels = predict_subjects(X, serving_url)
+    
+    # Print subject ids and pred shapes
+    for subject_id, subject_preds in zip(ids.keys(), y_pred):
+        print(f"Shape of {subject_id} preds:", subject_preds.shape)
+
+    # Build predictions df
+    df = build_df(y_pred, ids, labels, is_2d=config["save_2d"])
+
+    return df
+
+### Saving the predictions
+def save_preds(df, config):
+    pred_path = config["pred_path"]
+    if not pred_path.exists():
+        pred_path.mkdir(parents=True, exist_ok=True)
+
+    # Save slice-level predictions to `slice_predictions.json`
+    slice_pred_path = pred_path.joinpath("slice_predictions.json")
+    slice_preds_grouped = save_slice_pred(df, slice_pred_path)
+
+    # Save scan-level predictions to `scan_predictions.json`
+    scan_pred_path = pred_path.joinpath("scan_predictions.json")
+    scan_level_preds, scan_preds_grouped = save_scan_pred(df, scan_pred_path)
+
+    # Save subject-level predicitons to `subject_predictions.json`
+    subject_pred_path = pred_path.joinpath("subject_predictions.json")
+    subject_preds_grouped = save_subject_pred(scan_level_preds, subject_pred_path)
+    
+    preds_data = {
+        "slice_predictions": slice_preds_grouped.to_dict(),
+        "scan_predictions": scan_preds_grouped.to_dict(),
+        "subject_predictions": subject_preds_grouped.to_dict(orient="index")
+    }
+
+    return preds_data
+### Main
+def run_inference(X=None):
+    # Load the config
+    config = get_config_dict()
+    
+    # Run inference and get the results
+    df = get_inference_results(config, X)
+    
+    # Save the results as json files
+    preds_data = save_preds(df, config)
+    
+    return preds_data
+    
+if __name__ == "__main__":
+    run_inference()

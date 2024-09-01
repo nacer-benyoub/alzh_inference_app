@@ -90,12 +90,14 @@ def save_np(image_np, preprocessed_image_path):
 
     data_dict = {"image": image_np}
     np.savez_compressed(preprocessed_image_path, **data_dict) # saving into .npz
+    return image_np
 
 def save_2d(image_np, preprocessed_image_path):
     # preprocessed_image_path = str(preprocessed_image_path)[:str(preprocessed_image_path).rfind(".")]
     new_preprocessed_image_path = str(preprocessed_image_path).replace(".nii.gz", "")
     for slice in range(image_np.shape[0]):
         Image.fromarray(image_np[slice]).save(new_preprocessed_image_path + f"_slice{slice}.tiff")
+    return image_np
 
 
 def remove_nii_files(path: Path):
@@ -103,7 +105,11 @@ def remove_nii_files(path: Path):
         file.unlink()
 
 
-def main():
+def run_preprocessing():
+    config = get_config_dict()
+    data_path = config["raw_data_path"]
+    X = []
+    
     total_start = time.time()
     
     total_image_count = len(list(data_path.glob("**/*.nii")))
@@ -111,7 +117,7 @@ def main():
     subject_count = len(subject_folder_list)
     total_processed_images_count = 0
     for subject_index, subject_folder in enumerate(subject_folder_list):
-
+        subject_scans = []
         if subject_index == config["subject_limit"]:
             break
         
@@ -169,9 +175,9 @@ def main():
                 )
                 print(f"Image shape after cropping: {cropped_normalized_image_np.shape}")
             if config["save_2d"]:
-                save_2d(cropped_normalized_image_np, preprocessed_image_path)
+                image_np = save_2d(cropped_normalized_image_np, preprocessed_image_path)
             else:
-                save_np(cropped_normalized_image_np, preprocessed_image_path)
+                image_np = save_np(cropped_normalized_image_np, preprocessed_image_path)
 
             total_processed_images_count += 1
 
@@ -182,15 +188,16 @@ def main():
             print(f'Elapsed time: {datetime.timedelta(seconds=time.time() - start)}')
             print("-" * 40)
             print(f"\n\t\tProgress (/total image count): \t({total_processed_images_count}/{total_image_count})\n")
-
+            
+            subject_scans.append(image_np)
+        
+        subject_scans = np.array(subject_scans)
+        X.append(subject_scans)
 
     print(f'\nTotal processing time: {datetime.timedelta(seconds=time.time() - total_start)}')
+    
+    return X
 
 
 if __name__ == "__main__":
-    
-    config = get_config_dict()
-    
-    data_path = config["raw_data_path"]
-    
-    main()
+    X = run_preprocessing()

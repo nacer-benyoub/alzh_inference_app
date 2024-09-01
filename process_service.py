@@ -3,8 +3,12 @@ import json
 from pathlib import Path
 import shutil
 import uuid
+
+from numpy import array
 from get_config import get_config_dict
 from flask import Flask, request, jsonify
+from preprocessing import run_preprocessing
+from inference import run_inference
 import os
 
 app = Flask(__name__)
@@ -62,7 +66,7 @@ def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, im
 
 
 @app.route("/predict", methods=["POST"])
-def process_file():
+def process_files():
     # Extract the file and data
     received_files = request.files.getlist("files")
     subject_id = request.form['subject_id'] if "subject_id" in request.form else None
@@ -78,18 +82,19 @@ def process_file():
         if any([file_.filename.endswith(".dcm") for file_ in received_files]):
             os.system(f"dcm2niix {image_id_path}")
 
-        # Perform processing
-        os.system("./run.sh")
+        # Run preprocessing
+        X = run_preprocessing()
+        
+        app.logger.debug(f"X shape: {array(X).shape}")
+        
+        # Run inference
+        pred_data = run_inference(X)
 
         # Initialize the response
         result = {"status": "success"}
 
         # Read the resulting json files
-        json_filenames = Path(CONFIG["pred_path"]).glob("*.json")
-        json_data = {}
-        for filename in json_filenames:
-            json_data[filename.stem] = json.load(open(filename))
-        result["data"] = json_data
+        result["data"] = pred_data
         
         # Clean the data directory:
         if CONFIG['clean_data_dir']:
