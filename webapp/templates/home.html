@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="../static/css/styles.css">
+<title>Alzheimer's Disease Classification</title>
+{% endblock %}
+
+
+{% block body %}
+    <section class="main">
+        <div class="main-content">
+            <h2><span>Alzheimer’s Disease Classification of MRI data</span></h2>
+            <h2>This interactive tool allows clinicians to upload MRI data and receive predictions about Alzheimer's Disease, Mild Cognitive Impairment (MCI), and Cognitively Normal (CN) statuses.</h2>
+            <div class="button-container">
+                <button class="main-btn" onclick="window.location.href='{{ url_for('upload') }}'">Get Started</button>
+            </div>
+        </div>
+        <div class="imag">
+            <img src="../static/img/slices_0.6.png">
+        </div>
+    </section>
+{% endblock %}

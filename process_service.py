@@ -33,7 +33,8 @@ def generate_image_id(existing_ids):
 
 
 def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, image_type="MRI"):
-    # Remove image_type if not required by processing and inference scripts
+    # TODO Remove image_type if not required by processing and inference scripts
+    # TODO get image_date_time from uploaded nii/dicom files if possible
     
     # Prepare the directry names
     raw_data_dir = CONFIG["raw_data_path"]
@@ -64,6 +65,18 @@ def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, im
 
     return image_id_path
 
+@app.route("/upload", methods=["POST"])
+def recieve_files():
+    # Extract the file and data
+    received_files = request.files.getlist("files")
+    subject_id = request.form['subject_id'] if "subject_id" in request.form else None
+    image_id = request.form['image_id'] if "image_id" in request.form else None
+    if received_files:
+        # Save the file to the raw_data directory
+        image_id_path = ensure_raw_data_dir_structure(subject_id, image_id)
+        for file_ in received_files:
+            file_path = os.path.join(image_id_path, file_.filename)
+            file_.save(file_path)
 
 @app.route("/predict", methods=["POST"])
 def process_files():
@@ -71,6 +84,9 @@ def process_files():
     received_files = request.files.getlist("files")
     subject_id = request.form['subject_id'] if "subject_id" in request.form else None
     image_id = request.form['image_id'] if "image_id" in request.form else None
+    app.logger.debug(f"received files count: {len(received_files)}")
+    app.logger.debug(f"subject_id: {subject_id}")
+    app.logger.debug(f"image_id: {image_id}")
     if received_files:
         # Save the file to the raw_data directory
         image_id_path = ensure_raw_data_dir_structure(subject_id, image_id)

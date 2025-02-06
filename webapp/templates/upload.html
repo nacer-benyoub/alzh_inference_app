@@ -1,41 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="../static/css/styles_upload.css">
-    <title>Alzheimer’s Disease</title>
-</head>
+{% extends "base.html" %}
 
-<body>
-    
-    <section class="upload-section">
-        <div class="upload-container">
-            <h2>Upload Your File</h2>
-            <form id="upload-form" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
-                <div class="input-group1">
-                    <label for="file">Choose a file:</label>
-                    <!-- TODO allow image files as well, both here and in the processing service -->
-                    <input class="input1" type="file" id="file" name="file" accept=".dcm,.nii,.nii.gz" required onchange="previewImage(event)" multiple>
-                <div class="input-group">
-                    <label for="username">Subject ID or Name or Username:</label>
-                    <input type="text" id="subject_id" name="subject_id">
-                    <label for="username">Image ID:</label>
-                    <input type="text" id="image_id" name="image_id">
+{% block head %}
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+    <link rel="stylesheet" href="../static/css/styles_upload.css">
+    <title>Upload data</title>
+{% endblock %}
+
+{% block body %}
+    <section class="main-section">
+        <div class="text">
+            <h2 class="main-title">Upload the imaging files</h2>
+            <p class="instructions">Upload your imaging files to submit them for prediction and analysis</p>
+        </div>
+        <div class="file-uploader">
+            <div class="uploader-header">
+                <h2 class="uploader-title">Files</h2>
+                <h4 class="file-completed-status"></h4>
+            </div>
+            <div class="file-uploader-body">
+                <div class="file-upload-box">
+                    <h2 class="box-title">
+                        <span class="file-instruction">Drag files here or</span>
+                        <span class="file-browse-button">browse</span>
+                    </h2>
+                    <h2 class="box-title">NIfTI (.nii), DICOM (.dcm)</h2>
                 </div>
-                <div class="image-preview" id="image-preview">
-                    <img id="preview" src="" alt="Image Preview" style="display: none;">
-                    <button type="button" id="remove-btn" style="display: none;" onclick="removeImage()">Remove Image</button>
-                </div>
-                <button type="submit" class="main-btn" onclick="window.location.href='{{ url_for('upload') }}'">Submit</button>
-            </form>
+                <ul class="file-list"></ul>
+                <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+                    <input name = "file-browse-input" class="file-browse-input" type="file" accept=".nii, .dcm" multiple hidden>
+                    <div class="input-group">
+                        <label for="subject_id">Subject ID/Name/Username</label>
+                        <input type="text" id="subject_id" name="subject_id" defaultValue=None>
+                        <label for="image_id">Image ID</label>
+                        <input type="text" id="image_id" name="image_id" defaultValue=None>
+                    </div>
+                    <button type="button" class="main-btn" disabled>Submit</button>
+                    <div class="predict-progress-bar" style="display: none;">
+                        <p class="predict-progress-text">
+                            <span class="predict-progress-status">Analyzing...</span>
+                            <span class="predict-progress-pct">40%</span>
+                        </p>
+                        <div class="predict-progress"></div>
+                    </div>
+                </form>
+            </div>
         </div>
     </section>
-    <footer>
-        <button class="footer-btn" onclick="window.location.href='{{ url_for('upload') }}'">Go to Results</button>
-    </footer>
-
-    <script src="{{ url_for('static', filename='static/js/script.js') }}"></script>
-</body>
-</html>
+    
+    <script src={{ url_for("upload_js") }}></script>
+    {% endblock %}

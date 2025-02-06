@@ -1,0 +1,80 @@
+<!-- Use as basis for history page -->
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="../static/css/styles_results.css">
+<link rel="stylesheet" href="../static/css/styles_upload.css">
+<title>Prediction Results</title>
+{% endblock %}
+
+
+{% block body %}
+    <h1>Prediction Results</h1>
+    <div class="container">
+
+        <!-- Subject Predictions Section -->
+        <div class="subject-predictions">
+            <h2>Subject Predictions</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject ID</th>
+                        <th>AD</th>
+                        <th>CN</th>
+                        <th>MCI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject_id, predictions in data.subject_predictions.items() %}
+                    <tr>
+                        <td>{{ subject_id }}</td>
+                        <td>{{ (predictions.AD * 100) | round(3) }}%</td>
+                        <td>{{ (predictions.CN * 100) | round(3) }}%</td>
+                        <td>{{ (predictions.MCI * 100) | round(3) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Slice Predictions Section -->
+        <div class="slice-predictions">
+            <h2>Slice Predictions</h2>
+            {% for subject_id, scans in data.slice_predictions.items() %}
+                {% for scan_id, slices in scans.items() %}
+                    <div class="label">Subject: {{ subject_id }}, Scan: {{ scan_id }}</div>
+                    <div class="heatmap-container">
+                        <table class="heatmap-table">
+                            <thead>
+                                <tr>
+                                    {% for slice in slices %}
+                                    <th>slice {{ loop.index }} </th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    {% for pred in slices.values() %}
+                                    <td class="prediction-ad" style="--alpha: {{ pred.AD }}">{{ (pred.AD * 100) | round(3) }}%</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    {% for pred in slices.values() %}
+                                    <td class="prediction-mci" style="--alpha: {{ pred.MCI }}">{{ (pred.MCI * 100) | round(3) }}%</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    {% for pred in slices.values() %}
+                                    <td class="prediction-cn" style="--alpha: {{ pred.CN }}">{{ (pred.CN * 100) | round(3) }}%</td>
+                                    {% endfor %}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+{% endblock %}

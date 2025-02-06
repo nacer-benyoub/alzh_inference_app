@@ -1,5 +1,3 @@
-from doctest import REPORT_CDIFF
-from pprint import pprint
 from get_config import get_config_dict
 
 from pathlib import Path

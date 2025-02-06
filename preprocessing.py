@@ -147,6 +147,7 @@ def run_preprocessing():
                 total_processed_images_count += 1
                 print("Preprocessed images already exist. Skipping...")
                 print("-" * 40)
+                image_np = None
                 continue
 
             start = time.time()
@@ -194,7 +195,11 @@ def run_preprocessing():
         subject_scans = np.array(subject_scans)
         X.append(subject_scans)
 
+    if all([not image for image in np.array(X).flatten()]):
+        X = None
+    
     print(f'\nTotal processing time: {datetime.timedelta(seconds=time.time() - total_start)}')
+    
     
     return X
 

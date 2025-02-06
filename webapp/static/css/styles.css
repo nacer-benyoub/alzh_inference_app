@@ -1,14 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 *{
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', sans-serif;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     scroll-behavior: smooth; 
 }
 
-header{
+header {
     /* background-color: #f0f0f0; */
     width: 100%;
     position: fixed;
@@ -16,54 +16,67 @@ header{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0px 50px ;
+    padding: 24px 64px;
+    backdrop-filter: blur(12px);
 }
 
-.logo{
-    width: 50%;
-    height: 50%;
+header #logo-link {
+    display: contents;
 }
 
-.navigation a{
-    color: #3a6cf4;
+.navigation a {
     text-decoration: none;
+    color: #3a6cf4;
     font-size: 1.1em;
     font-weight: 500;
     padding-left: 30px;
 }
 
-.navigation a:hover{
+.navigation a:hover {
     color: #601cfc;
 }
 
-section {
-    padding: 50px 100px;
+.logo{
+    width: 15%;
+    height: 15%;
 }
 
 .main {
+    padding: 50px 0px 50px 100px;
     width: 100%;
     min-height: 100vh;
     display: flex;
     align-items: center;
-    background: #010920;
-    background-size: cover;
+    background: #E9F2FF;
     background-position: center;
-    background-attachment: fixed; /* we can removed */
 }
 
 .main h2 {
-    color: #fff;
-    font-size: 1.4em;
+    color: #14294b;
+    font-size: 1.3em;
     font-weight: 500;
-    margin-top: 40px;
+    line-height: 140%;
 }
 
 .main h2 span {
     display: inline-block;
     margin-top: 5px;
-    color: #4e9eff;
-    font-size: 2em;
+    line-height: 115%;
+    color: #14294b;
+    font-size: 2.2em;
     font-weight: 600;
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    gap: 16px;
+    align-items: center;
+}
+
+.instructions {
+    font-size: larger;
 }
 
 .main h3 {
@@ -76,33 +89,42 @@ section {
 }
 
 .main-btn {
-    color: #fff;
+    color: #E9F2FF;
     background-color: #3a6cf4;
     text-decoration: none;
-    font-size: 1.1em;
+    font-size: 1.3em;
     font-weight: 600;
     display: inline-block;
-    padding: 0.9375em 2.1875em;
-    letter-spacing: 1px;
-    border-radius: 15px;
-    margin-bottom: 30px;
+    padding: 8px 16px;
+    border-radius: 8px;
     transition: 0.7s ease;
     text-align: center;
+    height: 48px;
+    cursor: pointer;
 }
 
 .main-btn:hover {
-    background-color: #2a5acb;
+    background-color: #14294b;
 }
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    gap: 16px;
+}
+
 
 /* Center the button */
 .button-container {
     display: flex;
     justify-content: left;
-    margin-top: 75px; /* Add some margin if needed */
+    margin-top: 80px; /* Add some margin if needed */
 }
 
 .imag {
     width: 100%;
+    box-sizing: border-box;
     height: auto;
     padding: 30px 50px;
 }

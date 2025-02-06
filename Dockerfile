@@ -1,11 +1,11 @@
-FROM --platform=linux/amd64 condaforge/miniforge3:latest
+FROM --platform=linux/amd64 condaforge/miniforge3:24.3.0-0
 
 ENV FSL_CONDA_CHANNEL="https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public"
 
 # Optional: Update and install any dependencies or packages you need
 RUN apt-get update
 
-RUN conda install -y -c ${FSL_CONDA_CHANNEL} -c conda-forge \
+RUN conda install -y -c ${FSL_CONDA_CHANNEL} \
 bc \
 fsl-bet2 \
 fsl-avwutils \

@@ -1,42 +1,54 @@
-{% extends "base.html" %}
-
-{% block head %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="../static/css/styles_results.css">
-    <link rel="stylesheet" href="../static/css/styles_upload.css">
-    <title>Prediction Results</title>
-{% endblock %}
+    <link rel="stylesheet" href="../static/css/styles.css">
+    
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="../static/css/styles_results.css">
+<link rel="stylesheet" href="../static/css/styles_upload.css">
+<title>Prediction Results</title>
 
-{% block body %}    
+</head>
+<body>
+    <header>
+        <a href='/'>
+            <img class="logo" src="../static/img/logo.png">
+        </a>
+        <nav class="navigation">
+            <a href="#how-it-works">How it works</a>
+            <a href="#contact">Contact</a>
+            <a href="#about">About</a>
+            <a href="#login">Login</a>
+        </nav>
+    </header>
+    
     <section class="main-section">
-        <div class="text">
-            <h2 class="main-title">Prediction Results</h2>
-            <p class="instructions">Here, you can consult the results of Alzheimer's Disease classification of the MRI images you uploaded</p>
-            <p class="instructions">The predictions are categorized into overall image-level predictions and slice-level predictions</p>
-        </div>
+        <h1 class="main-title">Prediction Results</h1>
         <div class="main-container">
             <div class="top-row-container">
                 
                 <!-- Subject Predictions Section -->
                 <div id="scan-preds" class="primary-box">
                     <h3 class="container-title">Overall Predictions</h3>
-                    {% set scan_preds = data.scan_predictions %}
-                    {% set subject_id = scan_preds.keys() | first %}
-                    {% set image_id = scan_preds[subject_id].keys() | first %}
+                    {% set scan_preds = data.scan_predicions %}
+                    {% set subject_id = scan_preds.keys[0] %}
+                    {% set image_id = scan_preds.subject_id.keys[0] %}
                     <div class="container-sub-title">Subject <span id="subject_id">{{ subject_id }}</span><br>Scan <span id="image_id">{{ image_id }}</span></div>
                     <div class="body-card">
-                        {% set preds = scan_preds[subject_id][image_id] %}
-                        <div class="pred-card" style="--alpha: {{ preds.AD }}">
+                        <div class="pred-card">
                             <p class="pred-label">AD</p>
-                            <p class="pred-value">{{ (preds.AD * 100) | round(3) }}%</p>
+                            <p class="pred-value">{{ (scan_preds.subject_id.image_id.AD * 100) | round(3) }}%</p>
                         </div>
-                        <div class="pred-card" style="--alpha: {{ preds.MCI }}">
-                            <p class="pred-label">MCI</p>
-                            <p class="pred-value">{{ (preds.MCI * 100) | round(3) }}%</p>
-                        </div>
-                        <div class="pred-card" style="--alpha: {{ preds.CN }}">
+                        <div class="pred-card">
                             <p class="pred-label">CN</p>
-                            <p class="pred-value">{{ (preds.CN * 100) | round(3) }}%</p>
+                            <p class="pred-value">{{ (scan_preds.subject_id.image_id.CN * 100) | round(3) }}%</p>
+                        </div>
+                        <div class="pred-card">
+                            <p class="pred-label">MCI</p>
+                            <p class="pred-value">{{ (scan_preds.subject_id.image_id.MC * 100) | round(3)I }%}</p>
                         </div>
                     </div>
                 </div>
@@ -45,12 +57,12 @@
                 <div id="slice-preds" class="primary-box">
                     <h3 class="container-title">Slice-level Predictions</h3>
                     <div class="heatmap-container">
-                        {% set slice_preds = data.slice_predictions[subject_id][image_id] %}
+                        {% set slice_preds = data.slice_predictions.subject_id.image_id %}
                         <table class="heatmap-table">
                             <thead>
                                 <tr>
                                     {% for slice in slice_preds %}
-                                    <th>{{ loop.index }}</th>
+                                    <th>slice {{ loop.index }} </th>
                                     {% endfor %}
                                 </tr>
                             </thead>
@@ -86,4 +98,6 @@
             </div>
             </div>
         </section>
-{% endblock %}
+        
+    </body>
+    </html>
