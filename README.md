@@ -1,21 +1,25 @@
+## Overview
 
-This is a containerized inference pipeline for preprocessing and postprocessing Alzheimer's MRI data to deploy the models we trained *(via transfer learning)* as part of our Master's thesis titled "Alxheimer's disease detection using deep learning techniques". It has two main steps:
+This is a containerized web app and inference pipeline for preprocessing and postprocessing Alzheimer's MRI data to deploy the models we trained *(via transfer learning)* as part of our Master's thesis titled "Alzheimer's disease detection using deep learning techniques". It has two main steps:
 ### Preprocessing
 in which the same preprocessing logic used on the training data *(sampled from [ADNI](https://ida.loni.usc.edu/))* is applied on the inputs. This step is detailed in [this repo](https://github.com/nacer-benyoub/adni_preprocessing/tree/refactor/update-fslinstaller)
 ### Inference
 By using the Tensorflow Serving docker image to serve the model and output predictions from the preprocessed data
 
 ## Notes/TODO
-- Both [preprocessing.py](preprocessing.py) and [inference.ipynb](inference.ipynb) still expect the `raw_data` directory to have the ADNI data directory structure:
+- ⬜ Both [preprocessing.py](preprocessing.py) and [inference.py](inference.ipynb) still expect the `raw_data` directory to have the ADNI data directory structure:
 ```
 raw_data/<subject_id>/<preprocessing>/<date>/<acquisition_id>/<file_name>.nii
 ```
 Change the scripts to work without the need for the directory structure above.
-- Use logging instead of print statements (processing.py and inference.py).
-- Time the inference script and the total processing (preprocessing + inference) job
-- Show a progress bar during the processing job to improve the user experience.
+- ⬜ Use logging instead of print statements (processing.py and inference.py).
+- ⬜ Time the inference script and the total processing (preprocessing + inference) job
+- ✅ Show a progress bar during the processing job to improve the user experience.
+    - ⬜ Use Celery for a more informative progress bar.
 - Change how pred values colors contrast with background color (research if css has conditional blocks to use instead of computing 1 - var(--alpha))
-- Add caching to enhance processing performance and reduce the necessary time.
+- ⬜ Add caching to enhance processing performance and reduce the necessary time.
+- ✅ Optimize the preprocessing image build to reduce its size.
+- ⬜ Fix the atrocity of passing the inference data as an endpoint's query parameter
 
 ## Commands
 ### Inspecting the SavedModel
@@ -27,7 +31,7 @@ saved_model_cli show --dir saved_models/$MODEL_NAME/$MODEL_VERSION/ --all
 
 - Inspect the model (specific tag_set and signature_def)
 ```bash
-saved_model_cli show --dir saved_models/$MODEL_NAME/$MODEL_VERSION/ --tag_set serve --signature_def serving_edfault
+saved_model_cli show --dir saved_models/$MODEL_NAME/$MODEL_VERSION/ --tag_set serve --signature_def serving_default
 ```
 
 - Run the model on a preprocessed scan

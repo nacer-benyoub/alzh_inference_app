@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # activate the base (only) environment
-source /opt/conda/bin/activate base
+source $FSLDIR/bin/activate
 # activate FSL
 source $FSLDIR/etc/fslconf/fsl.sh
-exec "$@"
+# start flask server
+python ./process_service.py

@@ -60,6 +60,7 @@ def run_fsl_processing(image_path: Path, preprocessed_image_path: Path, ref: Pat
 
 def load_np_image(preprocessed_image_path: Path) -> np.array:
     ## load image
+    # TODO get rid of SimpleITK dependency and use an existing one instead
     preprocessed_image_sitk = sitk.ReadImage(str(preprocessed_image_path))
     preprocessed_image_np = sitk.GetArrayFromImage(preprocessed_image_sitk)
     return preprocessed_image_np

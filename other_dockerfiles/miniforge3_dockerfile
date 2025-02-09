@@ -1,0 +1,32 @@
+FROM --platform=linux/amd64 condaforge/miniforge3:latest
+
+ENV FSL_CONDA_CHANNEL="https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public"
+ENV PYTHONDONTWRITEBYTECODE=true
+
+# set the working directory in the container
+WORKDIR /app
+
+# Copy requirements.txt separately and install dependencies so it can be cached
+COPY requirements.txt requirements.txt
+
+ENV FSLDIR="/opt/conda"
+
+RUN conda install -y --freeze-installed -c ${FSL_CONDA_CHANNEL} --file requirements.txt \
+    && conda clean -afy \
+    && find /opt/conda/ -follow -type f -name '*.a' -delete \
+    && find /opt/conda/ -follow -type f -name '*.pyc' -delete \
+    && find /opt/conda/ -follow -type f -name '*.js.map' -delete \
+    # clean the data_standard directory and leave only the needed ref files
+    && find ${FSLDIR}/data/standard -type f ! -name 'MNI152_*_brain.nii.gz' -delete
+
+ENV PATH="${FSLDIR}/bin:${PATH}"
+ENV FSLOUTPUTTYPE="NIFTI_GZ"
+
+# Copy the files
+COPY . .
+
+# Make entrypoint.sh executable
+RUN chmod +x entrypoint.sh
+
+# run the entrypoint script
+ENTRYPOINT ["./entrypoint.sh"]

@@ -1,0 +1,99 @@
+FROM alpine:3.18
+LABEL MAINTAINER="Eric Miguel"
+
+ENV LANG=C.UTF-8
+
+# avaible versions: https://repo.continuum.io/miniconda/
+ENV CONDA_VERSION=25.1.1-0
+ENV PYTHON_VERSION=py312
+
+# wget some conda installer then run "md5sum {filename}" and get the value
+ENV CONDA_MD5=fb72cba314ff6aa1a4064a8b93e35619
+
+# Prevents Python from writing pyc files to disc (equivalent to python -B option)
+# Since this is a docker image, these will be recreated every time, writing them
+# just uses unnecessary disk space.
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Prevents Python from buffering stdout and stderr (equivalent to python -u option)
+ENV PYTHONUNBUFFERED=1
+
+# Here we install GNU libc (aka glibc) and set C.UTF-8 locale as default.
+RUN ALPINE_GLIBC_BASE_URL="https://github.com/sgerrand/alpine-pkg-glibc/releases/download" && \
+    ALPINE_GLIBC_PACKAGE_VERSION="2.35-r1" && \
+    ALPINE_GLIBC_BASE_PACKAGE_FILENAME="glibc-$ALPINE_GLIBC_PACKAGE_VERSION.apk" && \
+    ALPINE_GLIBC_BIN_PACKAGE_FILENAME="glibc-bin-$ALPINE_GLIBC_PACKAGE_VERSION.apk" && \
+    ALPINE_GLIBC_I18N_PACKAGE_FILENAME="glibc-i18n-$ALPINE_GLIBC_PACKAGE_VERSION.apk" && \
+    apk add --no-cache --virtual=.build-dependencies wget ca-certificates && \
+    wget -q -O "/etc/apk/keys/sgerrand.rsa.pub" "https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub" && \
+    wget \
+    "$ALPINE_GLIBC_BASE_URL/$ALPINE_GLIBC_PACKAGE_VERSION/$ALPINE_GLIBC_BASE_PACKAGE_FILENAME" \
+    "$ALPINE_GLIBC_BASE_URL/$ALPINE_GLIBC_PACKAGE_VERSION/$ALPINE_GLIBC_BIN_PACKAGE_FILENAME" \
+    "$ALPINE_GLIBC_BASE_URL/$ALPINE_GLIBC_PACKAGE_VERSION/$ALPINE_GLIBC_I18N_PACKAGE_FILENAME" && \
+    apk add --no-cache --force-overwrite \
+    "$ALPINE_GLIBC_BASE_PACKAGE_FILENAME" \
+    "$ALPINE_GLIBC_BIN_PACKAGE_FILENAME" \
+    "$ALPINE_GLIBC_I18N_PACKAGE_FILENAME" && \
+    apk add --force-overwrite gcompat libstdc++ && \
+    rm "/etc/apk/keys/sgerrand.rsa.pub" && \
+    /usr/glibc-compat/bin/localedef --force --inputfile POSIX --charmap UTF-8 "$LANG" || true && \
+    echo "export LANG=$LANG" > /etc/profile.d/locale.sh && \
+    \
+    apk del glibc-i18n && \
+    \
+    rm "/root/.wget-hsts" && \
+    apk del .build-dependencies && \
+    rm \
+    "$ALPINE_GLIBC_BASE_PACKAGE_FILENAME" \
+    "$ALPINE_GLIBC_BIN_PACKAGE_FILENAME" \
+    "$ALPINE_GLIBC_I18N_PACKAGE_FILENAME"
+
+# Adapted from https://github.com/jcrist/alpine-dask-docker
+# We do the following all in one block:
+# - Create user and group nonroot
+# - Install miniconda install dependencies
+# - Download miniconda and check the md5sum
+# - Install miniconda
+# - Remove all conda managed static libraries
+# - Remove all conda managed *.pyc files
+# - Cleanup conda files
+# - Uninstall miniconda install dependencies
+COPY requirements.txt requirements.txt
+ENV FSL_CONDA_CHANNEL="https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public"
+ENV FSLDIR="/opt/conda"
+ENV PATH="${FSLDIR}/bin:${PATH}"
+RUN apk add --no-cache bzip2 \
+    && addgroup -S nonroot \
+    && adduser -D -u 10151 nonroot -G nonroot \
+    && wget --quiet https://repo.continuum.io/miniconda/Miniconda3-${PYTHON_VERSION}_${CONDA_VERSION}-Linux-x86_64.sh \
+    && echo "${CONDA_MD5}  Miniconda3-${PYTHON_VERSION}_${CONDA_VERSION}-Linux-x86_64.sh" > miniconda.md5 \
+    && if [ $(md5sum -c miniconda.md5 | awk '{print $2}') != "OK" ] ; then exit 1; fi \
+    && mv Miniconda3-${PYTHON_VERSION}_${CONDA_VERSION}-Linux-x86_64.sh miniconda.sh \
+    && sh ./miniconda.sh -b -p ${FSLDIR} \
+    && rm miniconda.sh miniconda.md5 \
+    && ln -s ${FSLDIR}/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
+    && echo ". ${FSLDIR}/etc/profile.d/conda.sh" >> /home/nonroot/.profile \
+    && echo "conda activate base" >> /home/nonroot/.profile \
+    && ${FSLDIR}/bin/conda install -y --freeze-installed -c ${FSL_CONDA_CHANNEL} --file requirements.txt \
+    && ${FSLDIR}/bin/conda clean -afy \
+    && find ${FSLDIR} -follow -type f -name '*.a' -delete \
+    && find ${FSLDIR} -follow -type f -name '*.pyc' -delete \
+    && find ${FSLDIR} -follow -type f -name '*.js.map' -delete \
+    # clean the data_standard directory and leave only the needed ref files
+    # && find ${FSLDIR}/data/standard -type f ! -name 'MNI152_*_brain.nii.gz' -delete \
+    && chown -R nonroot:nonroot ${FSLDIR} \
+    && apk del wget bzip2
+
+USER nonroot:nonroot
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the files
+COPY . .
+
+# Make entrypoint.sh executable
+RUN chmod +x entrypoint.sh
+
+# run the entrypoint script
+ENTRYPOINT ["./entrypoint.sh"]
