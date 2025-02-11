@@ -10,4 +10,6 @@ saved_models
 *.md
 webapp
 inference.ipynb
-alzh-image/
+alzh-image
+logs
+*.log

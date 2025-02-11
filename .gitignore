@@ -7,3 +7,4 @@ fsl_ubuntu
 saved_models
 Notes.md
 webapp/raw_data
+*.log

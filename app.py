@@ -1,19 +1,28 @@
+import yaml
+from logging.config import dictConfig
 from datetime import datetime
-import json
-from pathlib import Path
 import shutil
 import uuid
 
 from numpy import array
-from get_config import get_config_dict
+from config import get_config
 from flask import Flask, request, jsonify
 from preprocessing import run_preprocessing
 from inference import run_inference
 import os
 
-app = Flask(__name__)
 
-CONFIG = get_config_dict()
+def setup_logging(config_filename="logs/config.yml"):
+    with open(config_filename) as f:
+        log_config = yaml.safe_load(f)
+    dictConfig(log_config)
+
+
+setup_logging()
+
+app = Flask("processing")
+
+CONFIG = get_config()
 
 
 def generate_subject_id(existing_ids):
@@ -32,10 +41,12 @@ def generate_image_id(existing_ids):
             return image_id
 
 
-def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, image_type="MRI"):
+def ensure_raw_data_dir_structure(
+    subject_id, image_id, image_date_time=None, image_type="MRI"
+):
     # TODO Remove image_type if not required by processing and inference scripts
     # TODO get image_date_time from uploaded nii/dicom files if possible
-    
+
     # Prepare the directry names
     raw_data_dir = CONFIG["raw_data_path"]
     os.makedirs(raw_data_dir, exist_ok=True)
@@ -51,7 +62,9 @@ def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, im
         image_date_time = datetime.now().strftime("%Y-%m-%d")
 
     # Create image_date_time directory
-    image_date_time_path = os.path.join(raw_data_dir, subject_id, image_type, image_date_time)
+    image_date_time_path = os.path.join(
+        raw_data_dir, subject_id, image_type, image_date_time
+    )
     os.makedirs(image_date_time_path, exist_ok=True)
 
     # Generate image_id if not provided
@@ -65,12 +78,13 @@ def ensure_raw_data_dir_structure(subject_id, image_id, image_date_time=None, im
 
     return image_id_path
 
+
 @app.route("/upload", methods=["POST"])
 def recieve_files():
     # Extract the file and data
     received_files = request.files.getlist("files")
-    subject_id = request.form['subject_id'] if "subject_id" in request.form else None
-    image_id = request.form['image_id'] if "image_id" in request.form else None
+    subject_id = request.form["subject_id"] if "subject_id" in request.form else None
+    image_id = request.form["image_id"] if "image_id" in request.form else None
     if received_files:
         # Save the file to the raw_data directory
         image_id_path = ensure_raw_data_dir_structure(subject_id, image_id)
@@ -78,12 +92,13 @@ def recieve_files():
             file_path = os.path.join(image_id_path, file_.filename)
             file_.save(file_path)
 
+
 @app.route("/predict", methods=["POST"])
 def process_files():
     # Extract the file and data
     received_files = request.files.getlist("files")
-    subject_id = request.form['subject_id'] if "subject_id" in request.form else None
-    image_id = request.form['image_id'] if "image_id" in request.form else None
+    subject_id = request.form["subject_id"] if "subject_id" in request.form else None
+    image_id = request.form["image_id"] if "image_id" in request.form else None
     app.logger.debug(f"received files count: {len(received_files)}")
     app.logger.debug(f"subject_id: {subject_id}")
     app.logger.debug(f"image_id: {image_id}")
@@ -93,16 +108,17 @@ def process_files():
         for file_ in received_files:
             file_path = os.path.join(image_id_path, file_.filename)
             file_.save(file_path)
-            
+
         # Convert DICOM files to NIfTI if any are present
         if any([file_.filename.endswith(".dcm") for file_ in received_files]):
+            app.logger.info("Detected DICOM scans. Coverting to NIfTI...")
             os.system(f"dcm2niix {image_id_path}")
 
         # Run preprocessing
         X = run_preprocessing()
-        
+
         app.logger.debug(f"X shape: {array(X).shape}")
-        
+
         # Run inference
         pred_data = run_inference(X)
 
@@ -111,10 +127,13 @@ def process_files():
 
         # Read the resulting json files
         result["data"] = pred_data
-        
+
         # Clean the data directory:
-        if CONFIG['clean_data_dir']:
-            for directory in [CONFIG['raw_data_path'], CONFIG["preprocessed_data_path"]]:
+        if CONFIG["clean_data_dir"]:
+            for directory in [
+                CONFIG["raw_data_path"],
+                CONFIG["preprocessed_data_path"],
+            ]:
                 shutil.rmtree(directory)
 
         # Return the post-processed results

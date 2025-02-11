@@ -7,19 +7,20 @@ in which the same preprocessing logic used on the training data *(sampled from [
 By using the Tensorflow Serving docker image to serve the model and output predictions from the preprocessed data
 
 ## Notes/TODO
-- ⬜ Both [preprocessing.py](preprocessing.py) and [inference.py](inference.ipynb) still expect the `raw_data` directory to have the ADNI data directory structure:
+- ⌛ Both [preprocessing.py](preprocessing.py) and [inference.py](inference.ipynb) still expect the `raw_data` directory to have the ADNI data directory structure:
 ```
 raw_data/<subject_id>/<preprocessing>/<date>/<acquisition_id>/<file_name>.nii
 ```
 Change the scripts to work without the need for the directory structure above.
-- ⬜ Use logging instead of print statements (processing.py and inference.py).
-- ⬜ Time the inference script and the total processing (preprocessing + inference) job
+- ✅ Use logging instead of print statements (processing.py and inference.py).
+- ⌛ Time the inference script and the total processing (preprocessing + inference) job
 - ✅ Show a progress bar during the processing job to improve the user experience.
-    - ⬜ Use Celery for a more informative progress bar.
+    - ⌛ Use Celery for a more informative progress bar.
 - Change how pred values colors contrast with background color (research if css has conditional blocks to use instead of computing 1 - var(--alpha))
-- ⬜ Add caching to enhance processing performance and reduce the necessary time.
+- ⌛ Add caching to enhance processing performance and reduce the necessary time.
 - ✅ Optimize the preprocessing image build to reduce its size.
-- ⬜ Fix the atrocity of passing the inference data as an endpoint's query parameter
+- ⌛ Fix the atrocity of passing the inference data as an endpoint's query parameter
+- ⌛ Preprocessing and inference steps run on all the existing scans in the data directory regardless of the specified subject_id and image_id (must be fixed but could be used in a future batch mode feature)
 
 ## Commands
 ### Inspecting the SavedModel

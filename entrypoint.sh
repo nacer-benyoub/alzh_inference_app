@@ -5,4 +5,4 @@ source $FSLDIR/bin/activate
 # activate FSL
 source $FSLDIR/etc/fslconf/fsl.sh
 # start flask server
-python ./process_service.py
+python ./app.py
