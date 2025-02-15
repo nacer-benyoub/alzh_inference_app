@@ -10,11 +10,12 @@ services:
       - 8501
 
   processing:
+    build: processing
     image: alzh-processing
     container_name: processing
     volumes:
-      - "./data:/app/data"
-      - "./logs:/app/logs"
+      - "./processing/data:/app/data"
+      - "./processing/logs:/app/logs"
     env_file:
       - .env
     depends_on:
