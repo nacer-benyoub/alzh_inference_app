@@ -15,75 +15,45 @@ import requests
 
 ## Data loading functions
 # `load_*_data` functions expect ADNI-like directory structure
-def load_2d_data(data_dir: Path, ids_only=False):
-    X = []
+def load_2d_data(scan_id_path: Path, subject_id: str, scan_id: str, ids_only=False):
     ids = {}
-    for subject_idx, subject_path in enumerate(data_dir.glob("*")):
-        scan_ids = {}
-        subject_scans = []
-        subject_id = subject_path.stem
+    scan_ids = {scan_id: []}
 
-        for scan_idx, scan_path in enumerate(subject_path.glob("**/*")):
-            scan_imgs = []
-            scan_id = scan_path.stem
-            scan_ids[scan_id] = []
-            for img_idx, img_path in enumerate(scan_path.glob("**/*.tiff")):
-                img_name = img_path.stem
+    scan_imgs = []
+    for img_path in scan_id_path.glob("**/*.tiff"):
+        img_name = img_path.stem
 
-                if not ids_only:
-                    img = tiff.imread(img_path)
-                    if img.shape[-1] not in (1, 3):
-                        img = np.expand_dims(img, axis=-1)
-                    if img.shape[-1] == 1:
-                        img = np.repeat(img, 3, axis=-1)
+        if not ids_only:
+            img = tiff.imread(img_path)
+            if img.shape[-1] not in (1, 3):
+                img = np.expand_dims(img, axis=-1)
+            if img.shape[-1] == 1:
+                img = np.repeat(img, 3, axis=-1)
 
-                    scan_imgs.append(img)
+            scan_imgs.append(img)
 
-                scan_ids[scan_id].append(img_name)
+        scan_ids[scan_id].append(img_name)
 
-            subject_scans.append(scan_imgs)
-
-        ids[subject_id] = scan_ids
-        subject_scans = np.array(subject_scans)
-        X.append(subject_scans)
-    if ids_only:
-        logger.debug("IDs shape: %s", np.array(ids).shape)
-    else:
-        logger.debug("X shape: %s", np.array(X).shape)
+    scan_imgs = np.array(scan_imgs)
+    X = [scan_imgs]
+    ids[subject_id] = scan_ids
     return X, ids
 
 
-def load_3d_data(data_dir: Path, npz_key="image", ids_only=False):
+def load_3d_data(data_dir: Path, subject_id: str, scan_id: str, npz_key="image", ids_only=False):
     X = []
-    ids = {}
-    for subject_idx, subject_path in enumerate(data_dir.glob("*")):
-        scan_ids = {}
-        subject_scans = []
-        subject_id = subject_path.stem
+    ids = {subject_id:{}}
 
-        scan_paths = subject_path.glob("**/*.npz")
-        for scan_idx, scan_path in enumerate(scan_paths):
-            scan_id = scan_path.parent.stem
-            scan_name = scan_path.stem
+    scan_paths = data_dir.glob("**/*.npz")
+    for scan_path in scan_paths:
+        scan_name = scan_path.stem
 
-            if not ids_only:
-                img = np.load(scan_path)[npz_key]
-
-            scan_ids[scan_id] = scan_name
-
-            if not ids_only:
-                subject_scans.append(img)
-
-        ids[subject_id] = scan_ids
         if not ids_only:
-            subject_scans = np.array(subject_scans)
-            X.append(subject_scans)
-            # X = tf.squeeze(X)
-            # X = [np.squeeze(imgs, axis=1) for imgs in X]
-    if ids_only:
-        logger.debug("IDs shape: %s", np.array(ids).shape)
-    else:
-        logger.debug("X shape: %s", np.array(X).shape)
+            img = np.load(scan_path)[npz_key]
+            X.append(img)
+
+        ids[subject_id][scan_id] = scan_name
+
     return X, ids
 
 
@@ -107,48 +77,38 @@ def predict_scan(serving_url, scan_imgs):
 
 def predict_subjects(X, serving_url):
     y_pred = []
-    for subject_imgs in X:
-        subject_preds = []
+    labels = []
+    for scan_imgs in X:
+        scan_preds, labels = predict_scan(serving_url, scan_imgs)
+        # Reverse one-hot predictions
+        # scan_preds = scan_preds.argmax(axis=-1)
 
-        for scan_imgs in subject_imgs:
-            scan_preds, labels = predict_scan(serving_url, scan_imgs)
-            # Reverse one-hot predictions
-            # scan_preds = scan_preds.argmax(axis=-1)
-
-            subject_preds.append(scan_preds)
-
-        y_pred.append(np.array(subject_preds))
+        y_pred.append(np.array(scan_preds))
     return y_pred, labels
-
-
-# import yaml
-# with open('CLASSES.yaml') as f:
-#     label_mapper = yaml.safe_load(f.read())
-
 
 ## df building
 def build_df(y_pred, ids, labels, is_2d):
     df = []
-    for subject_id, subject_preds in zip(ids.keys(), y_pred):
-        for scan_id, scan_preds in zip(ids[subject_id].keys(), subject_preds):
-            if is_2d:
-                for slice_name, slice_pred in zip(ids[subject_id][scan_id], scan_preds):
-                    d = {
-                        "subject_id": subject_id,
-                        "scan_id": scan_id,
-                        "slice_name": slice_name,
-                    }
-                    d.update({label: pred for label, pred in zip(labels, slice_pred)})
-                    df.append(d)
-            else:
-                for slice_num, slice_pred in enumerate(scan_preds):
-                    d = {
-                        "subject_id": subject_id,
-                        "scan_id": scan_id,
-                        "slice_name": f"{ids[subject_id][scan_id]}_slice{slice_num}",
-                    }
-                    d.update({label: pred for label, pred in zip(labels, slice_pred)})
-                    df.append(d)
+    subject_id = list(ids.keys())[0]
+    for scan_id, scan_preds in zip(ids[subject_id].keys(), y_pred):
+        if is_2d:
+            for slice_name, slice_pred in zip(ids[subject_id][scan_id], scan_preds):
+                d = {
+                    "subject_id": subject_id,
+                    "scan_id": scan_id,
+                    "slice_name": slice_name,
+                }
+                d.update({label: pred for label, pred in zip(labels, slice_pred)})
+                df.append(d)
+        else:
+            for slice_num, slice_pred in enumerate(scan_preds):
+                d = {
+                    "subject_id": subject_id,
+                    "scan_id": scan_id,
+                    "slice_name": f"{ids[subject_id][scan_id]}_slice_{slice_num}",
+                }
+                d.update({label: pred for label, pred in zip(labels, slice_pred)})
+                df.append(d)
 
     df = pd.DataFrame(df).set_index(["subject_id", "scan_id"])
     return df
@@ -196,21 +156,30 @@ def save_subject_pred(scan_level_preds, subject_pred_path):
 
 
 ### Inference
-def get_inference_results(input_data=None):
-    preprocessed_data_path = CONFIG["preprocessed_data_path"]
-
+def get_inference_results(input_data=None, subject_id=None, image_id=None, image_id_path=None):
     # Define the directory containing the extracted dataset
-    data_dir = Path(preprocessed_data_path)
+    image_id_dir = Path(image_id_path)
 
     # Load the data
     ids_only = input_data is not None
     if CONFIG["save_2d"]:
-        X, ids = load_2d_data(data_dir=data_dir, ids_only=ids_only)
+        X, ids = load_2d_data(
+            scan_id_path=image_id_dir,
+            subject_id=subject_id,
+            scan_id=image_id,
+            ids_only=ids_only
+        )
     else:
-        X, ids = load_3d_data(data_dir=data_dir, ids_only=ids_only)
+        X, ids = load_3d_data(
+            data_dir=image_id_dir,
+            subject_id=subject_id,
+            scan_id=image_id,
+            ids_only=ids_only
+        )
 
     X = input_data if ids_only else X
 
+    logger.debug("IDs: %s", ids)
     # Log subject ids and scan shapes
     for subject_id, subject_imgs in zip(ids.keys(), X):
         logger.debug("Shape of %s images: %s", subject_id, subject_imgs.shape)
@@ -258,9 +227,9 @@ def save_preds(df):
 
 
 ### Main
-def run_inference(X=None):
+def run_inference(X=None, subject_id=None, image_id=None, image_id_path=None):
     # Run inference and get the results
-    df = get_inference_results(X)
+    df = get_inference_results(X, subject_id, image_id, image_id_path)
 
     # Save the results as json files
     preds_data = save_preds(df)

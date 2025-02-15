@@ -68,9 +68,9 @@ def ensure_raw_data_dir_structure(
     os.makedirs(image_date_time_path, exist_ok=True)
 
     # Generate image_id if not provided
-    image_ids = [d for d in os.listdir(image_date_time_path)]
+    existing_image_ids = [d for d in os.listdir(image_date_time_path)]
     if image_id is None:
-        image_id = generate_image_id(image_ids)
+        image_id = generate_image_id(existing_image_ids)
 
     # Create image id directory directory
     image_id_path = os.path.join(image_date_time_path, image_id)
@@ -113,14 +113,22 @@ def process_files():
         if any([file_.filename.endswith(".dcm") for file_ in received_files]):
             app.logger.info("Detected DICOM scans. Coverting to NIfTI...")
             os.system(f"dcm2niix {image_id_path}")
+            app.logger.info("Scans converted.")
 
+        app.logger.debug(f"image_id path: {image_id_path}")
         # Run preprocessing
-        X = run_preprocessing()
+        # TODO: Eliminate IO and pass the files directly to preprocessing
+        # which fixes the limitation of relying on the ADNI folder structure
+        X = run_preprocessing(subject_id, image_id, image_id_path)
 
-        app.logger.debug(f"X shape: {array(X).shape}")
+        if X:
+            app.logger.debug(f"X shape: {array(X).shape}")
+        else:
+            app.logger.debug(f"Cache hit. Preprocessing skipped")
 
         # Run inference
-        pred_data = run_inference(X)
+        preprocessed_image_id_path = image_id_path.replace("raw", "preprocessed")
+        pred_data = run_inference(X, subject_id, image_id, preprocessed_image_id_path)
 
         # Initialize the response
         result = {"status": "success"}

@@ -12,7 +12,7 @@ Change the scripts to work without the need for the directory structure above.
 - ⌛ Add caching to enhance processing performance and reduce the necessary time.
 - ✅ Optimize the preprocessing image build to reduce its size.
 - ⌛ Fix the atrocity of passing the inference data as an endpoint's query parameter
-- ⌛ Preprocessing and inference steps run on all the existing scans in the data directory regardless of the specified subject_id and image_id (must be fixed but could be used in a future batch mode feature)
+- ✅ Preprocessing and inference steps run on all the existing scans in the data directory regardless of the specified subject_id and image_id (must be fixed but could be used in a future batch mode feature)
 
 ## Commands
 ### Inspecting the SavedModel

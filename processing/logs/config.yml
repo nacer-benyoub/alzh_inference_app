@@ -27,3 +27,7 @@ loggers:
     handlers:
       - stdout
     propagate: false
+  PIL.TiffImagePlugin:
+    handlers:
+      - stdout
+    propagate: false

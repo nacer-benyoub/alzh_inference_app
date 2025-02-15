@@ -123,115 +123,98 @@ def remove_nii_files(path: Path):
         file_.unlink()
 
 
-def run_preprocessing():
-    data_path = CONFIG["raw_data_path"]
+def run_preprocessing(subject_id, image_id, image_id_path):
     X = []
 
     total_start = time.time()
-
-    total_image_count = len(list(data_path.glob("**/*.nii")))
-    subject_folder_list = sorted(list(data_path.glob("*")))
-    subject_count = len(subject_folder_list)
+    image_id_path = Path(image_id_path)
+    image_files = list(image_id_path.glob("**/*.nii"))
+    total_image_count = len(image_files)
     total_processed_images_count = 0
-    for subject_index, subject_folder in enumerate(subject_folder_list):
-        subject_scans = []
-        if subject_index == CONFIG["subject_limit"]:
-            break
+    subject_scans = []
+    
+    for image_index, image_path in enumerate(image_files):
+        logger.info(
+            f"Processing image {image_id} ({image_index + 1}/{total_image_count}) for subject {subject_id} ..."
+        )
+
+        preprocessed_image_path = Path(
+            str(image_path)
+            .replace("raw", "preprocessed")
+            .replace(".nii", ".nii.gz")
+        )
+        preprocessed_image_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if CONFIG["save_2d"]:
+            existing_processed_files_count = len(
+                list(preprocessed_image_path.parent.glob("**/*.tiff"))
+            )
+        else:
+            existing_processed_files_count = len(
+                list(preprocessed_image_path.parent.glob("**/*.npz"))
+            )
+        if existing_processed_files_count > 0 and not CONFIG["re_process"]:
+            total_processed_images_count += 1
+            logger.info("Preprocessed images already exist. Skipping...")
+            image_np = None
+            continue
+
+        start = time.time()
+        try:
+
+            logger.info("======== FSL output ========")
+
+            preprocessed_image_path_fsl = run_fsl_processing(
+                image_path,
+                preprocessed_image_path,
+                CONFIG["reference_atlas_location"],
+            )
+            logger.info("======== FSL output ========")
+
+            preprocessed_image_np = load_np_image(preprocessed_image_path_fsl)
+        except:
+            with open("load_error_list.txt", "a") as the_file:
+                the_file.write(f"{str(image_path)}\n")
+            continue
+
+        normalized_image_np = intensity_normalization(preprocessed_image_np)
+
+        if CONFIG["axial_size"] is not None:
+            logger.info(f"Image shape before cropping: {normalized_image_np.shape}")
+            cropped_normalized_image_np = cropping(
+                normalized_image_np,
+                axial_size=CONFIG["axial_size"],
+                central_crop_along_z=CONFIG["central_crop_along_z"],
+                central_crop_size=CONFIG["central_crop_size"],
+            )
+            logger.info(
+                f"Image shape after cropping: {cropped_normalized_image_np.shape}"
+            )
+        if CONFIG["save_2d"]:
+            image_np = save_2d(cropped_normalized_image_np, preprocessed_image_path)
+        else:
+            image_np = save_np(cropped_normalized_image_np, preprocessed_image_path)
+
+        total_processed_images_count += 1
+
+        if CONFIG["remove_nii"]:
+            remove_nii_files(preprocessed_image_path)
 
         logger.info(
-            f"Subject {subject_folder.name} ({subject_index + 1}/{subject_count}):"
+            f"Processing done for image {image_id}"
         )
-        logger.info("-" * 60)
+        logger.info(
+            f"Elapsed time: {datetime.timedelta(seconds=time.time() - start)}"
+        )
+        logger.info("-" * 40)
+        logger.info(
+            f"Progress (/total image count): ({total_processed_images_count}/{total_image_count})"
+        )
 
-        subject_image_files = sorted(subject_folder.glob("**/*.nii"))
-        subject_image_files_unique = get_unique_image_file(subject_image_files)
-        subject_image_count = subject_image_files_unique.shape[0]
+        subject_scans.append(image_np)
 
-        for image_index, image_path in enumerate(subject_image_files_unique):
-
-            subject_processed_images_count = total_image_count + image_index
-            logger.info(
-                f"Processing image {image_path.parent.name} ({image_index + 1}/{subject_image_count}) for subject {subject_folder.name} ..."
-            )
-
-            preprocessed_image_path = Path(
-                str(image_path)
-                .replace("raw", "preprocessed")
-                .replace(".nii", ".nii.gz")
-            )
-            preprocessed_image_path.parent.mkdir(parents=True, exist_ok=True)
-
-            if CONFIG["save_2d"]:
-                existing_processed_files_count = len(
-                    list(preprocessed_image_path.parent.glob("**/*.tiff"))
-                )
-            else:
-                existing_processed_files_count = len(
-                    list(preprocessed_image_path.parent.glob("**/*.npz"))
-                )
-            if existing_processed_files_count > 0 and not CONFIG["re_process"]:
-                total_processed_images_count += 1
-                logger.info("Preprocessed images already exist. Skipping...")
-                logger.info("-" * 40)
-                image_np = None
-                continue
-
-            start = time.time()
-            try:
-
-                logger.info("======== FSL output ========")
-
-                preprocessed_image_path_fsl = run_fsl_processing(
-                    image_path,
-                    preprocessed_image_path,
-                    CONFIG["reference_atlas_location"],
-                )
-                logger.info("======== FSL output ========")
-
-                preprocessed_image_np = load_np_image(preprocessed_image_path_fsl)
-            except:
-                with open("load_error_list.txt", "a") as the_file:
-                    the_file.write(f"{str(image_path)}\n")
-                continue
-
-            normalized_image_np = intensity_normalization(preprocessed_image_np)
-
-            if CONFIG["axial_size"] is not None:
-                logger.info(f"Image shape before cropping: {normalized_image_np.shape}")
-                cropped_normalized_image_np = cropping(
-                    normalized_image_np,
-                    axial_size=CONFIG["axial_size"],
-                    central_crop_along_z=CONFIG["central_crop_along_z"],
-                    central_crop_size=CONFIG["central_crop_size"],
-                )
-                logger.info(
-                    f"Image shape after cropping: {cropped_normalized_image_np.shape}"
-                )
-            if CONFIG["save_2d"]:
-                image_np = save_2d(cropped_normalized_image_np, preprocessed_image_path)
-            else:
-                image_np = save_np(cropped_normalized_image_np, preprocessed_image_path)
-
-            total_processed_images_count += 1
-
-            if CONFIG["remove_nii"]:
-                remove_nii_files(preprocessed_image_path)
-
-            logger.info(
-                f"Processing done for image {preprocessed_image_path.parent.name}"
-            )
-            logger.info(
-                f"Elapsed time: {datetime.timedelta(seconds=time.time() - start)}"
-            )
-            logger.info("-" * 40)
-            logger.info(
-                f"Progress (/total image count): ({total_processed_images_count}/{total_image_count})"
-            )
-
-            subject_scans.append(image_np)
-
-        subject_scans = np.array(subject_scans)
-        X.append(subject_scans)
+    subject_scans = np.array(subject_scans)
+    X.append(subject_scans)
 
     if all([not image for image in np.array(X).flatten()]):
         X = None
