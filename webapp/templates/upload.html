@@ -2,7 +2,7 @@
 
 {% block head %}
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
-    <link rel="stylesheet" href="../static/css/styles_upload.css">
+    <link rel="stylesheet" href={{ url_for('static', filename='css/styles_upload.css') }}>
     <title>Upload data</title>
 {% endblock %}
 
@@ -27,7 +27,7 @@
                 </div>
                 <ul class="file-list"></ul>
                 <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-                    <input name = "file-browse-input" class="file-browse-input" type="file" accept=".nii, .dcm" multiple hidden>
+                    <input name="file-browse-input" class="file-browse-input" type="file" accept=".nii, .dcm" multiple hidden>
                     <div class="input-group">
                         <label for="subject_id">Subject ID/Name/Username</label>
                         <input type="text" id="subject_id" name="subject_id" defaultValue=None>
@@ -38,7 +38,7 @@
                     <div class="predict-progress-bar" style="display: none;">
                         <p class="predict-progress-text">
                             <span class="predict-progress-status">Analyzing...</span>
-                            <span class="predict-progress-pct">40%</span>
+                            <span class="predict-progress-pct">0%</span>
                         </p>
                         <div class="predict-progress"></div>
                     </div>
@@ -47,5 +47,8 @@
         </div>
     </section>
     
-    <script src={{ url_for("upload_js") }}></script>
+    <script>
+        processing_service_url = {{ processing_url|tojson }}
+    </script>
+    <script src={{ url_for('static', filename='js/script.js') }}></script>
     {% endblock %}

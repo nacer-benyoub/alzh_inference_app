@@ -21,7 +21,7 @@ services:
     depends_on:
       - serving
     expose:
-      - 5000
+      - $PROCESSING_CONTAINER_PORT
 
   webapp:
     build: webapp

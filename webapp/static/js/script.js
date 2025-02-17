@@ -98,7 +98,7 @@ const handleFileUploading = (file, uniqueIdentifier, subject_id, image_id) => {
         fileSize.innerText = formattedFileSize;
     });
     // Opening connection to the server API endpoint "upload" and sending the form data
-    xhr.open("POST", "{{ url_for('upload') }}", true);
+    xhr.open("POST", window.location.href, true);
     xhr.send(formData);
     return xhr;
 }
@@ -226,16 +226,26 @@ const sendPredictRequest = () => {
     xhr.addEventListener("readystatechange", () => {
         if(xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
             let response = xhr.response;
-            debugger;
             response = JSON.parse(response);
-            document.location.href=response.redirect;
-            // xhr.open("POST", response.post, true);
-            // xhr.send({data: response.data});
+            // document.location.href=response.redirect
+            debugger;
+            let form = document.createElement("form");
+            form.method = "POST";
+            form.action = response.redirect;
+
+            let input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "data";  // Flask will need to use `request.form.get("data")`
+            input.value = JSON.stringify(response.data);
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
         };
     });
     // Show Alert if there is any error occured during file uploading
     xhr.addEventListener("error", () => {
-        const predictProgressStatus = document.querySelector(".predit-progress-status");
+        const predictProgressStatus = document.querySelector(".predict-progress-status");
         predictProgressStatus.innerText = "Error";
         predictProgressStatus.style.color = "#E3413F";
         predictProgress.style.color = "#E3413F";
@@ -244,7 +254,7 @@ const sendPredictRequest = () => {
     });
 
     // Send predict request
-    xhr.open("POST", "{{ url_for('submit') }}", true);
+    xhr.open("POST", processing_service_url, true);
     xhr.send(formData);
 }
 

@@ -314,7 +314,7 @@
 }
 
 .predict-progress-bar .predict-progress {
-  width: 40%;
+  width: 0%;
   height: inherit;
   border-radius: inherit;
   background: #3a6cf4;

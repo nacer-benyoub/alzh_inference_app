@@ -1,16 +1,14 @@
+import json
 import yaml
 from logging.config import dictConfig
 import os
-from flask import Flask, jsonify, render_template, request, redirect, url_for
+from flask import Flask, jsonify, render_template, request, url_for
 import requests  # For communicating with processing container
-import json5
-
 
 def setup_logging(config_filename="logs/config.yml"):
     with open(config_filename) as f:
         log_config = yaml.safe_load(f)
     dictConfig(log_config)
-
 
 setup_logging()
 
@@ -25,11 +23,6 @@ if not PROCESSING_SERVICE_URL.endswith("/"):
 @app.route("/")
 def home():
     return render_template("home.html")
-
-
-@app.route("/upload_js")
-def upload_js():
-    return render_template("script.js")
 
 
 @app.route("/upload", methods=["GET", "POST"])
@@ -57,7 +50,7 @@ def upload():
             _file.save(os.path.join("uploads", _file.filename))
         return "", 200
 
-    return render_template("upload.html")
+    return render_template("upload.html", processing_url=url_for("submit"))
 
 
 @app.route("/submit", methods=["POST"])
@@ -80,7 +73,7 @@ def submit():
             image_id = None
 
         # Post processing request and get results
-        payload = {"subject_id": subject_id, "image_id": image_id}
+        ids_payload = {"subject_id": subject_id, "image_id": image_id}
         app.logger.debug(f"subject_id: {subject_id}")
         app.logger.debug(f"image_id: {image_id}")
         app.logger.debug(f"files count: {len(uploaded_files)}")
@@ -91,19 +84,23 @@ def submit():
                 ("files", (file_.filename, file_.read(), file_.content_type))
             )
         response = requests.post(
-            PROCESSING_SERVICE_URL + "predict", files=file_payload, data=payload
+            PROCESSING_SERVICE_URL + "predict", files=file_payload, data=ids_payload
         )
         response_json = response.json()
         if response_json["status"] == "success":
             data = response_json["data"]
-            return jsonify({"redirect": url_for("results", data=data)})
+            return jsonify({"redirect": url_for("results"), "data": data})
 
 
-@app.route("/results/<data>")
-def results(data):
-    # TODO: Handle cases where data is not available (e.g., no upload yet)
-    data = json5.loads(data)
-    return render_template("results.html", data=data)
+@app.route("/results", methods=["POST", "GET"])
+def results():
+    # TODO: Handle GET request (create an empty state template)
+    if request.method == "POST":
+        # TODO: Handle cases where data is not available (e.g., no upload yet)
+        data = request.form.get("data")
+        data = json.loads(data)
+        
+        return render_template("results.html", data=data)
 
 
 if __name__ == "__main__":
